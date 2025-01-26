@@ -1,2 +1,2 @@
 # Crowdfunding-DAO
-A decentralized crowdfunding platform
+A decentralized crowdfunding platform.
