@@ -2,103 +2,69 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
 describe("Crowdfunding Contract", function () {
-    let Crowdfunding, crowdfunding;
-    let owner, contributor1, contributor2, recipient;
+    let Crowdfunding, crowdfunding, owner, contributor1, contributor2, project;
 
     beforeEach(async function () {
-        [owner, contributor1, contributor2, recipient] = await ethers.getSigners();
-
+        [owner, contributor1, contributor2, project] = await ethers.getSigners();
         Crowdfunding = await ethers.getContractFactory("Crowdfunding");
         crowdfunding = await Crowdfunding.deploy();
         await crowdfunding.waitForDeployment();
     });
 
-    it("should allow contributions and update balances", async function () {
-        const contributionAmount = ethers.parseEther("1");
-        await crowdfunding.connect(contributor1).contribute({ value: contributionAmount });
-
-        const totalContributions = await crowdfunding.totalContributions();
-        const contribution1Balance = await crowdfunding.contributions(contributor1.address);
-
-        expect(totalContributions).to.equal(contributionAmount);
-        expect(contribution1Balance).to.equal(contributionAmount);
+    it("should allow contributions to the crowdfunding contract", async function () {
+        await crowdfunding.connect(contributor1).contribute({ value: ethers.parseEther("2") });
+        expect(await crowdfunding.contributions(contributor1.address)).to.equal(ethers.parseEther("2"));
+        expect(await crowdfunding.totalContributions()).to.equal(ethers.parseEther("2"));
     });
 
-    it("should allow the owner to create a proposal", async function () {
-        const fundRequest = ethers.parseEther("0.5");
-        const description = "Fund a project";
-
-        await crowdfunding.connect(contributor1).contribute({ value: ethers.parseEther("1") });
-
-        await crowdfunding.connect(owner).createProposal(description, fundRequest, recipient.address);
-
-        const proposal = await crowdfunding.proposals(0);
-        expect(proposal.description).to.equal(description);
-        expect(proposal.fundRequest).to.equal(fundRequest);
-        expect(proposal.recipient).to.equal(recipient.address);
-    });
-
-    it("should allow contributors to vote on proposals", async function () {
-        const fundRequest = ethers.parseEther("0.5");
-        const description = "Fund a project";
-
-        await crowdfunding.connect(contributor1).contribute({ value: ethers.parseEther("1") });
-        await crowdfunding.connect(owner).createProposal(description, fundRequest, recipient.address);
-
-        await crowdfunding.connect(contributor1).vote(0, true);
-
-        const proposal = await crowdfunding.proposals(0);
-        expect(proposal.votesFor).to.equal(1);
-        expect(proposal.votesAgainst).to.equal(0);
-    });
-
-    it("should not allow double voting", async function () {
-        const fundRequest = ethers.parseEther("0.5");
-
-        await crowdfunding.connect(contributor1).contribute({ value: ethers.parseEther("1") });
-        await crowdfunding.connect(owner).createProposal("Test Proposal", fundRequest, recipient.address);
-
-        await crowdfunding.connect(contributor1).vote(0, true);
-
-        await expect(
-            crowdfunding.connect(contributor1).vote(0, true)
-        ).to.be.revertedWith("You have already voted on this proposal");
-    });
-
-    it("should allow owner to execute approved proposals", async function () {
-        const fundRequest = ethers.parseEther("0.5");
-
-        await crowdfunding.connect(contributor1).contribute({ value: ethers.parseEther("1") });
-        await crowdfunding.connect(owner).createProposal("Test Proposal", fundRequest, recipient.address);
-        await crowdfunding.connect(contributor1).vote(0, true);
-
-        await crowdfunding.connect(owner).executeProposal(0);
-
-        const proposal = await crowdfunding.proposals(0);
-        expect(proposal.executed).to.be.true;
-        expect(await ethers.provider.getBalance(recipient.address)).to.equal(
-            ethers.parseEther("10000.5")
+    it("should allow creating a proposal", async function () {
+        await crowdfunding.createProposal(
+            "Test Proposal",
+            ethers.parseEther("3"),
+            project.address,
+            Math.floor(Date.now() / 1000) + 60
         );
+        const proposal = await crowdfunding.proposals(0);
+        expect(proposal.description).to.equal("Test Proposal");
+        expect(proposal.fundRequest).to.equal(ethers.parseEther("3"));
+        expect(proposal.projectContract).to.equal(project.address);
     });
 
-    it("should not execute proposals with more votes against", async function () {
-        const fundRequest = ethers.parseEther("0.5");
+    it("should execute a proposal if funds are sufficient", async function () {
+        await crowdfunding.createProposal(
+            "Test Proposal",
+            ethers.parseEther("3"),
+            project.address,
+            Math.floor(Date.now() / 1000) + 60
+        );
 
-        await crowdfunding.connect(contributor1).contribute({ value: ethers.parseEther("1") });
-        await crowdfunding.connect(owner).createProposal("Test Proposal", fundRequest, recipient.address);
+        await crowdfunding.connect(contributor1).contribute({ value: ethers.parseEther("3") });
 
-        await crowdfunding.connect(contributor1).vote(0, false);
+        await ethers.provider.send("evm_increaseTime", [61]);
+        await ethers.provider.send("evm_mine");
 
-        await expect(
-            crowdfunding.connect(owner).executeProposal(0)
-        ).to.be.revertedWith("Proposal was not approved");
+        const balanceBefore = await ethers.provider.getBalance(project.address);
+
+        await crowdfunding.executeProposal(0);
+
+        const balanceAfter = await ethers.provider.getBalance(project.address);
+        expect(balanceAfter - balanceBefore).to.equal(ethers.parseEther("3"));
     });
 
-    it("should not allow non-owners to create proposals", async function () {
-        const fundRequest = ethers.parseEther("0.5");
+    it("should allow contributors to withdraw funds", async function () {
+        await crowdfunding.connect(contributor1).contribute({ value: ethers.parseEther("2") });
+        await crowdfunding.connect(contributor2).contribute({ value: ethers.parseEther("3") });
 
-        await expect(
-            crowdfunding.connect(contributor1).createProposal("Unauthorized Proposal", fundRequest, recipient.address)
-        ).to.be.revertedWith("Only owner can call this function");
+        const balanceBefore1 = await ethers.provider.getBalance(contributor1.address);
+        const balanceBefore2 = await ethers.provider.getBalance(contributor2.address);
+
+        await crowdfunding.connect(contributor1).withdraw();
+        await crowdfunding.connect(contributor2).withdraw();
+
+        const balanceAfter1 = await ethers.provider.getBalance(contributor1.address);
+        const balanceAfter2 = await ethers.provider.getBalance(contributor2.address);
+
+        expect(balanceAfter1).to.be.gt(balanceBefore1);
+        expect(balanceAfter2).to.be.gt(balanceBefore2);
     });
 });
