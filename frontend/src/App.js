@@ -9,7 +9,7 @@ import "./App.css";
 const CrowdfundingABI = CrowdfundingData.abi;
 const ProjectABI = ProjectData.abi;
 
-const crowdfundingAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+const crowdfundingAddress = "0x3B34be004Ac4283914Ee833F00450cC8b116C6E2";
 
 const App = () => {
   const [account, setAccount] = useState(null);
@@ -19,26 +19,40 @@ const App = () => {
   const [loading, setLoading] = useState(false);
 
   const initWeb3 = async () => {
-    if (window.ethereum) {
+    if (!window.ethereum) {
+      alert("Please install MetaMask!");
+      return;
+    }
+  
+    try {
       setLoading(true);
       const web3Provider = new ethers.BrowserProvider(window.ethereum);
-      setProvider(web3Provider);
-
-      await window.ethereum.request({ method: "eth_requestAccounts" });
-
+      await window.ethereum.request({ method: "eth_requestAccounts" }); // CERE ACCES LA CONT
+  
       const web3Signer = await web3Provider.getSigner();
-      setSigner(web3Signer);
-
       const userAddress = await web3Signer.getAddress();
-      setAccount(userAddress);
-
       const userBalance = await web3Provider.getBalance(userAddress);
+  
+      setProvider(web3Provider);
+      setSigner(web3Signer);
+      setAccount(userAddress);
       setBalance(ethers.formatEther(userBalance));
-
+  
+      console.log("Connected account:", userAddress);
+      console.log("Balance:", ethers.formatEther(userBalance));
+      const network = await web3Provider.getNetwork();
+console.log("Connected to network:", network.chainId);
+    } catch (error) {
+      console.error("Error connecting to MetaMask:", error);
+      alert("Connection to MetaMask failed!");
+    } finally {
       setLoading(false);
-    } else {
-      alert("Please install MetaMask");
     }
+    console.log("Provider:", provider);
+console.log("Signer:", signer);
+console.log("Contract Address:", crowdfundingAddress);
+console.log("ABI:", CrowdfundingABI);
+
   };
 
   useEffect(() => {
@@ -80,3 +94,4 @@ const App = () => {
 };
 
 export default App;
+

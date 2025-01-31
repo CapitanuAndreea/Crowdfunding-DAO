@@ -39,6 +39,10 @@ contract Project {
         }
     }
 
+    receive() external payable {
+        emit FundsReceived(msg.sender, msg.value);
+    }
+
     function completeProject() internal {
         require(receivedFunds >= fundingGoal, "Funding goal not reached");
         completed = true;

@@ -32,15 +32,22 @@ contract Crowdfunding {
         owner = msg.sender;
     }
 
-    function contribute() external payable {
-        require(msg.value > 0, "Contribution must be greater than 0");
-        contributions[msg.sender] += msg.value;
-        totalContributions += msg.value;
-        balances[msg.sender] += msg.value;
+    function contribute(uint256 proposalId) external payable {
+    require(msg.value > 0, "Contribution must be greater than 0");
+    require(proposalId < proposals.length, "Invalid proposal ID");
+    require(!proposals[proposalId].executed, "Proposal already executed");
 
-        emit ContributionReceived(msg.sender, msg.value);
-    }
+    Proposal storage proposal = proposals[proposalId];
 
+    // Transferă fondurile direct către contractul proiectului
+    (bool sent, ) = proposal.projectContract.call{value: msg.value}("");
+    require(sent, "Failed to send Ether");
+
+    contributions[msg.sender] += msg.value;
+    totalContributions += msg.value;
+
+    emit ContributionReceived(msg.sender, msg.value);
+}
     function createProposal(string memory _description, uint256 _fundRequest, address payable _projectContract, uint256 _executionTime) external onlyOwner {
         proposals.push(Proposal({
             description: _description,
@@ -78,7 +85,7 @@ contract Crowdfunding {
         emit Withdrawal(msg.sender, amount);
     }
 
-    function getProposalsCount() external view returns (uint256) {
+    function getProposalsCount() public view returns (uint256) {
         return proposals.length;
     }
 }

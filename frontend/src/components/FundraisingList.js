@@ -3,11 +3,12 @@ import { ethers } from "ethers";
 import CrowdfundingABI from "../Crowdfunding.json";
 import "../styles/FundraisingList.css";
 
-const crowdfundingAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+const crowdfundingAddress = "0x3B34be004Ac4283914Ee833F00450cC8b116C6E2";
 
 const FundraisingList = ({ provider }) => {
   const [fundraisings, setFundraisings] = useState([]);
   const [contract, setContract] = useState(null);
+  const [contributionAmounts, setContributionAmounts] = useState({}); // Stochează sumele introduse
 
   useEffect(() => {
     const loadFundraisings = async () => {
@@ -43,19 +44,24 @@ const FundraisingList = ({ provider }) => {
   const contribute = async (fundraisingId) => {
     if (!contract) return;
     const signer = await provider.getSigner();
-    const amount = ethers.parseEther("0.01"); // suma fixă de contribuție
+    
+    const amount = contributionAmounts[fundraisingId];
+
+    if (!amount || isNaN(amount) || Number(amount) <= 0) {
+        alert("Introduceți o sumă validă!");
+        return;
+    }
 
     try {
-      const tx = await signer.sendTransaction({
-        to: fundraisings[fundraisingId].projectContract,
-        value: amount,
-      });
-      await tx.wait();
-      alert("Contribuție efectuată cu succes!");
+        const crowdfundingWithSigner = contract.connect(signer);
+        const tx = await crowdfundingWithSigner.contribute(fundraisingId, { value: ethers.parseEther(amount) });
+        await tx.wait();
+        alert("Contribuție efectuată cu succes!");
     } catch (error) {
-      alert(`Eroare: ${error.message}`);
+        console.error("Eroare la contribuție:", error);
+        alert(`Eroare: ${error.message}`);
     }
-  };
+};
 
   return (
     <div className="fundraising-list-container">
@@ -68,8 +74,23 @@ const FundraisingList = ({ provider }) => {
             <p><strong>Description:</strong> {fund.description}</p>
             <p><strong>Required Amount:</strong> {fund.fundRequest} ETH</p>
             <p><strong>Status:</strong> {fund.executed ? "Completed" : "Active"}</p>
+
+            {/* Input pentru suma de contribuție */}
+            <input
+              type="number"
+              placeholder="Enter amount (ETH)"
+              value={contributionAmounts[index] || ""}
+              onChange={(e) => setContributionAmounts({
+                ...contributionAmounts,
+                [index]: e.target.value,
+              })}
+              className="input-field"
+              disabled={fund.executed}
+            />
+
+            {/* Buton pentru contribuție */}
             <button onClick={() => contribute(index)} disabled={fund.executed}>
-              Contribute 0.01 ETH
+              Contribute
             </button>
           </div>
         ))

@@ -3,9 +3,10 @@ import { ethers } from "ethers";
 import CrowdfundingABI from "../Crowdfunding.json";
 import "../styles/CreateFundraisingForm.css";
 
-const crowdfundingAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+const crowdfundingAddress = "0x3B34be004Ac4283914Ee833F00450cC8b116C6E2";
 
 const CreateFundraisingForm = ({ provider }) => {
+  
   const [description, setDescription] = useState("");
   const [fundRequest, setFundRequest] = useState("");
   const [executionTime, setExecutionTime] = useState("");
@@ -44,6 +45,7 @@ const CreateFundraisingForm = ({ provider }) => {
 
   return (
     <form onSubmit={handleSubmit} className="create-fundraising-form">
+      
       <h2>Create a Fundraising</h2>
       <input
         type="text"
