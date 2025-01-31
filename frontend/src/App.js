@@ -26,39 +26,58 @@ const App = () => {
   
     try {
       setLoading(true);
-      const web3Provider = new ethers.BrowserProvider(window.ethereum);
-      await window.ethereum.request({ method: "eth_requestAccounts" }); // CERE ACCES LA CONT
   
+      // Verifică dacă deja este conectat
+      const accounts = await window.ethereum.request({ method: "eth_accounts" });
+      let userAddress = accounts.length > 0 ? accounts[0] : null;
+  
+      // Dacă nu este conectat, cere permisiunea
+      if (!userAddress) {
+        const requestedAccounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+        userAddress = requestedAccounts[0];
+      }
+  
+      const web3Provider = new ethers.BrowserProvider(window.ethereum);
+      setProvider(web3Provider);
       const web3Signer = await web3Provider.getSigner();
-      const userAddress = await web3Signer.getAddress();
+      setSigner(web3Signer);
+
+      userAddress = await web3Signer.getAddress();
+      setAccount(userAddress);
       const userBalance = await web3Provider.getBalance(userAddress);
+      setBalance(ethers.formatEther(userBalance));
   
       setProvider(web3Provider);
       setSigner(web3Signer);
       setAccount(userAddress);
       setBalance(ethers.formatEther(userBalance));
   
-      console.log("Connected account:", userAddress);
-      console.log("Balance:", ethers.formatEther(userBalance));
-      const network = await web3Provider.getNetwork();
-console.log("Connected to network:", network.chainId);
+      console.log("Connected to MetaMask:", userAddress);
     } catch (error) {
       console.error("Error connecting to MetaMask:", error);
-      alert("Connection to MetaMask failed!");
+      alert("Connection to MetaMask failed.");
     } finally {
       setLoading(false);
     }
-    console.log("Provider:", provider);
-console.log("Signer:", signer);
-console.log("Contract Address:", crowdfundingAddress);
-console.log("ABI:", CrowdfundingABI);
-
   };
 
   useEffect(() => {
-    if (account) return; // Dacă deja e conectat, nu mai inițializăm din nou
-    initWeb3();
-  }, [account]);
+    if (window.ethereum) {
+      window.ethereum.on('accountsChanged', (accounts) => {
+        if (accounts.length > 0) {
+          setAccount(accounts[0]);
+          initWeb3(); // Reinitializează pentru noul cont
+        } else {
+          setAccount(null);
+          setProvider(null);
+          setSigner(null);
+          setBalance("0");
+        }
+      });
+  
+      //initWeb3(); // Inițializează aplicația la încărcare
+    }
+  }, []);
 
   return (
     <div className="app-container">
@@ -77,13 +96,13 @@ console.log("ABI:", CrowdfundingABI);
           </button>
         )}
       </div>
-      
+
       {account && (
         <div className="main-content">
           <div className="create-fundraising">
             <CreateFundraisingForm provider={provider} />
           </div>
-          
+
           <div className="fundraising-list">
             <FundraisingList provider={provider} />
           </div>
@@ -94,4 +113,3 @@ console.log("ABI:", CrowdfundingABI);
 };
 
 export default App;
-
