@@ -37,7 +37,7 @@ contract Crowdfunding {
         string memory _description,
         uint256 _fundRequest,
         uint256 _executionTime
-    ) external onlyOwner {
+    ) external {
         // Creare contract nou Project
         Project newProject = new Project(_name, _description, _fundRequest, msg.sender);
         address projectAddress = address(newProject);

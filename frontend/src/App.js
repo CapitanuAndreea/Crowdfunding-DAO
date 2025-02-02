@@ -8,7 +8,7 @@ import "./App.css";
 
 const CrowdfundingABI = CrowdfundingData.abi;
 const ProjectABI = ProjectData.abi;
-const crowdfundingAddress = "0x306e170b5D16b15bA17E7F0a37c3191aDd47E581";
+const crowdfundingAddress = "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0";
 
 const App = () => {
   const [account, setAccount] = useState(null);
@@ -38,7 +38,7 @@ const App = () => {
         }
       });
     }
-  }, []);
+  }, [account, provider]);
 
   const initWeb3 = async () => {
     if (!window.ethereum) {

@@ -44,4 +44,9 @@ contract Project {
         payable(owner).transfer(receivedFunds);
         emit ProjectCompleted(owner, receivedFunds);
     }
+
+    function getBalance() public view returns (uint256) {
+    return address(this).balance;
+    }
+
 }

@@ -3,12 +3,13 @@ import { ethers } from "ethers";
 import CrowdfundingABI from "../Crowdfunding.json";
 import "../styles/FundraisingList.css";
 
-const crowdfundingAddress = "0x306e170b5D16b15bA17E7F0a37c3191aDd47E581";
+const crowdfundingAddress = "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0";
 
 const FundraisingList = ({ provider }) => {
   const [fundraisings, setFundraisings] = useState([]);
   const [contract, setContract] = useState(null);
   const [contributionAmounts, setContributionAmounts] = useState({});
+  const [currentFunds, setCurrentFunds] = useState({});
 
   useEffect(() => {
     console.log("Provider in FundraisingList:", provider);
@@ -25,10 +26,22 @@ const FundraisingList = ({ provider }) => {
 
       const count = await crowdfundingContract.getProposalsCount();
       const fundraisers = [];
+      const fundsRaised = {};
 
       for (let i = 0; i < count; i++) {
         const proposal = await crowdfundingContract.proposals(i);
+
+        const projectContract = new ethers.Contract(
+          proposal.projectContract,
+          ["function getBalance() public view returns (uint256)"],
+          provider
+        );
+        const raisedAmount = await projectContract.getBalance();
+
+        fundsRaised[i] = ethers.formatEther(raisedAmount);
+
         console.log(`Proposal ${i}:`, {
+          name: proposal.name,
           description: proposal.description,
           fundRequest: ethers.formatEther(proposal.fundRequest),
           executed: proposal.executed,
@@ -37,6 +50,7 @@ const FundraisingList = ({ provider }) => {
 
         fundraisers.push({
           id: i,
+          name: proposal.name,
           description: proposal.description,
           fundRequest: ethers.formatEther(proposal.fundRequest),
           executed: proposal.executed,
@@ -45,6 +59,7 @@ const FundraisingList = ({ provider }) => {
       }
 
       setFundraisings(fundraisers);
+      setCurrentFunds(fundsRaised);
     };
 
     loadFundraisings();
@@ -63,44 +78,15 @@ const FundraisingList = ({ provider }) => {
 
     try {
         const crowdfundingWithSigner = contract.connect(signer);
-        const tx = await crowdfundingWithSigner.contribute(fundraisingId, { value: ethers.parseEther(amount) });
+        const tx = await crowdfundingWithSigner.contribute(fundraisingId, {
+          value: ethers.parseEther(amount)
+        });
         await tx.wait();
         alert("Contribuție efectuată cu succes!");
+        window.location.reload();
     } catch (error) {
         console.error("Eroare la contribuție:", error);
         alert(`Eroare: ${error.message}`);
-    }
-  };
-
-  const sendTestTransaction = async (projectContractAddress) => {
-    if (!provider) {
-      console.error("Provider not found");
-      alert("Conectează-te la MetaMask înainte de a testa!");
-      return;
-    }
-
-    if (!ethers.isAddress(projectContractAddress)) {
-      alert("Adresa contractului nu este validă!");
-      return;
-    }
-
-    try {
-      const signer = await provider.getSigner();
-
-      console.log("📢 Trimit ETH către:", projectContractAddress);
-
-      const tx = await signer.sendTransaction({
-        to: projectContractAddress,
-        value: ethers.parseEther("0.001"),
-        gasLimit: ethers.toBigInt(300000),
-      });
-
-      await tx.wait();
-      console.log("✅ Tranzacția a fost trimisă cu succes:", tx);
-      alert("Tranzacție reușită! Verifică în MetaMask.");
-    } catch (error) {
-      console.error("⛔ Eroare la trimiterea ETH:", error);
-      alert(`Eroare: ${error.message}`);
     }
   };
 
@@ -110,38 +96,40 @@ const FundraisingList = ({ provider }) => {
       {fundraisings.length === 0 ? (
         <p>No active fundraisers available.</p>
       ) : (
-        fundraisings.map((fund, index) => (
-          <div key={index} className="fundraising-item">
-            <p><strong>Description:</strong> {fund.description}</p>
-            <p><strong>Required Amount:</strong> {fund.fundRequest} ETH</p>
-            <p><strong>Status:</strong> {fund.executed ? "Completed" : "Active"}</p>
+        fundraisings.map((fund, index) => {
+          const fundsRaised = currentFunds[index] || "0";
+          const isFullyFunded = parseFloat(fundsRaised) >= parseFloat(fund.fundRequest);
 
-            {/* Input pentru suma de contribuție */}
-            <input
-              type="number"
-              placeholder="Enter amount (ETH)"
-              value={contributionAmounts[index] || ""}
-              onChange={(e) => setContributionAmounts({
-                ...contributionAmounts,
-                [index]: e.target.value,
-              })}
-              className="input-field"
-              disabled={fund.executed}
-            />
+          return (
+            <div key={index} className="fundraising-item">
+              <p><strong>Name:</strong> {fund.name}</p>
+              <p><strong>Description:</strong> {fund.description}</p>
+              <p><strong>Required Amount:</strong> {fund.fundRequest} ETH</p>
+              <p><strong>Raised Amount:</strong> {fundsRaised} ETH</p>
+              <p><strong>Status:</strong> {isFullyFunded ? "Completed" : "Active"}</p>
 
-            {/* Buton pentru contribuție */}
-            <button onClick={() => contribute(index)} disabled={fund.executed}>
-              Contribute
-            </button>
+              {/* Input pentru suma de contribuție */}
+              <input
+                type="number"
+                placeholder="Enter amount (ETH)"
+                value={contributionAmounts[index] || ""}
+                onChange={(e) =>
+                  setContributionAmounts({
+                    ...contributionAmounts,
+                    [index]: e.target.value,
+                  })
+                }
+                className="input-field"
+                disabled={isFullyFunded}
+              />
 
-            {/* Buton pentru trimiterea de ETH către contractul proiectului */}
-            {fund.projectContract !== ethers.ZeroAddress && (
-              <button onClick={() => sendTestTransaction(fund.projectContract)}>
-                Test Send ETH to Project
+              {/* Buton pentru contribuție */}
+              <button onClick={() => contribute(index)} disabled={isFullyFunded}>
+                Contribute
               </button>
-            )}
-          </div>
-        ))
+            </div>
+          );
+        })
       )}
     </div>
   );
