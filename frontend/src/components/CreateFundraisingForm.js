@@ -3,10 +3,10 @@ import { ethers } from "ethers";
 import CrowdfundingABI from "../Crowdfunding.json";
 import "../styles/CreateFundraisingForm.css";
 
-const crowdfundingAddress = "0x3B34be004Ac4283914Ee833F00450cC8b116C6E2";
+const crowdfundingAddress = "0x306e170b5D16b15bA17E7F0a37c3191aDd47E581";
 
 const CreateFundraisingForm = ({ provider }) => {
-  
+  const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [fundRequest, setFundRequest] = useState("");
   const [executionTime, setExecutionTime] = useState("");
@@ -30,23 +30,41 @@ const CreateFundraisingForm = ({ provider }) => {
 
       const fundAmount = ethers.parseEther(fundRequest);
       const tx = await crowdfundingContract.createProposal(
+        name,
         description,
         fundAmount,
-        crowdfundingAddress,
         executionTime
       );
-      await tx.wait();
-      alert("Fundraising created successfully!");
+
+      const receipt = await tx.wait();
+
+      // Extrage adresa noului contract Project din evenimentul ProposalCreated
+      const event = receipt.logs.find(log => log.fragment.name === "ProposalCreated");
+
+      if (event) {
+        const projectAddress = event.args.projectContract;
+        alert(`Fundraising created successfully! Project Contract Address: ${projectAddress}`);
+      } else {
+        alert("Fundraising created, but couldn't fetch the project address.");
+      }
+
     } catch (error) {
       console.error("Error creating fundraising:", error);
+      alert(`Error: ${error.message}`);
     }
     setLoading(false);
   };
 
   return (
     <form onSubmit={handleSubmit} className="create-fundraising-form">
-      
       <h2>Create a Fundraising</h2>
+      <input
+        type="text"
+        placeholder="Name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        className="input-field"
+      />
       <input
         type="text"
         placeholder="Description"

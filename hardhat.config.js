@@ -9,7 +9,7 @@ module.exports = {
     },
     sepolia: {
       url: process.env.SEPOLIA_RPC_URL,
-      accounts: [process.env.PRIVATE_KEY1, process.env.PRIVATE_KEY2],
+      accounts: [process.env.PRIVATE_KEY1],
     },
   },
 };

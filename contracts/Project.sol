@@ -26,21 +26,16 @@ contract Project {
         completed = false;
     }
 
-    function receiveFunds() external payable {
+    receive() external payable {
         require(msg.value > 0, "Contribution must be greater than 0");
         require(!completed, "Project already completed");
 
         receivedFunds += msg.value;
-
         emit FundsReceived(msg.sender, msg.value);
 
         if (receivedFunds >= fundingGoal) {
             completeProject();
         }
-    }
-
-    receive() external payable {
-        emit FundsReceived(msg.sender, msg.value);
     }
 
     function completeProject() internal {

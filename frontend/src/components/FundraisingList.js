@@ -3,14 +3,16 @@ import { ethers } from "ethers";
 import CrowdfundingABI from "../Crowdfunding.json";
 import "../styles/FundraisingList.css";
 
-const crowdfundingAddress = "0x3B34be004Ac4283914Ee833F00450cC8b116C6E2";
+const crowdfundingAddress = "0x306e170b5D16b15bA17E7F0a37c3191aDd47E581";
 
 const FundraisingList = ({ provider }) => {
   const [fundraisings, setFundraisings] = useState([]);
   const [contract, setContract] = useState(null);
-  const [contributionAmounts, setContributionAmounts] = useState({}); // Stochează sumele introduse
+  const [contributionAmounts, setContributionAmounts] = useState({});
 
   useEffect(() => {
+    console.log("Provider in FundraisingList:", provider);
+
     const loadFundraisings = async () => {
       if (!provider) return;
       const signer = await provider.getSigner();
@@ -26,12 +28,19 @@ const FundraisingList = ({ provider }) => {
 
       for (let i = 0; i < count; i++) {
         const proposal = await crowdfundingContract.proposals(i);
+        console.log(`Proposal ${i}:`, {
+          description: proposal.description,
+          fundRequest: ethers.formatEther(proposal.fundRequest),
+          executed: proposal.executed,
+          projectContract: proposal.projectContract,
+        });
+
         fundraisers.push({
           id: i,
           description: proposal.description,
           fundRequest: ethers.formatEther(proposal.fundRequest),
           executed: proposal.executed,
-          projectContract: proposal.projectContract,
+          projectContract: proposal.projectContract, // Adresa contractului proiectului
         });
       }
 
@@ -61,7 +70,39 @@ const FundraisingList = ({ provider }) => {
         console.error("Eroare la contribuție:", error);
         alert(`Eroare: ${error.message}`);
     }
-};
+  };
+
+  const sendTestTransaction = async (projectContractAddress) => {
+    if (!provider) {
+      console.error("Provider not found");
+      alert("Conectează-te la MetaMask înainte de a testa!");
+      return;
+    }
+
+    if (!ethers.isAddress(projectContractAddress)) {
+      alert("Adresa contractului nu este validă!");
+      return;
+    }
+
+    try {
+      const signer = await provider.getSigner();
+
+      console.log("📢 Trimit ETH către:", projectContractAddress);
+
+      const tx = await signer.sendTransaction({
+        to: projectContractAddress,
+        value: ethers.parseEther("0.001"),
+        gasLimit: ethers.toBigInt(300000),
+      });
+
+      await tx.wait();
+      console.log("✅ Tranzacția a fost trimisă cu succes:", tx);
+      alert("Tranzacție reușită! Verifică în MetaMask.");
+    } catch (error) {
+      console.error("⛔ Eroare la trimiterea ETH:", error);
+      alert(`Eroare: ${error.message}`);
+    }
+  };
 
   return (
     <div className="fundraising-list-container">
@@ -92,6 +133,13 @@ const FundraisingList = ({ provider }) => {
             <button onClick={() => contribute(index)} disabled={fund.executed}>
               Contribute
             </button>
+
+            {/* Buton pentru trimiterea de ETH către contractul proiectului */}
+            {fund.projectContract !== ethers.ZeroAddress && (
+              <button onClick={() => sendTestTransaction(fund.projectContract)}>
+                Test Send ETH to Project
+              </button>
+            )}
           </div>
         ))
       )}
