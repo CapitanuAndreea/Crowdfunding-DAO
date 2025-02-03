@@ -2,6 +2,8 @@
 
 A decentralized crowdfunding platform
 
+![Demo](./Demo.mp4)
+
 ## Features
 
 - **Create Campaigns:** Initiate new crowdfunding campaigns with customizable goals and deadlines.
