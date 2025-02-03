@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import CrowdfundingABI from "../Crowdfunding.json";
 import "../styles/FundraisingList.css";
+import { toast } from "react-toastify";
 
 const crowdfundingAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
 
@@ -66,30 +67,33 @@ const FundraisingList = ({ provider, refresh }) => {
     }
   };
 
-  const contribute = async (fundraisingId) => {
-    if (!contract) return;
-    const signer = await provider.getSigner();
-    const amount = contributionAmounts[fundraisingId];
 
-    if (!amount || isNaN(amount) || Number(amount) <= 0) {
-      alert("Please enter a valid amount!");
-      return;
-    }
 
-    try {
-      const crowdfundingWithSigner = contract.connect(signer);
-      const tx = await crowdfundingWithSigner.contribute(fundraisingId, {
-        value: ethers.parseEther(amount),
-      });
-      await tx.wait();
-      
-      alert("Contribution successful!");
-      loadFundraisings();
-    } catch (error) {
-      console.error("Error contributing:", error);
-      alert(`Error: ${error.message}`);
-    }
-  };
+const contribute = async (fundraisingId) => {
+  if (!contract) return;
+  const signer = await provider.getSigner();
+  const amount = contributionAmounts[fundraisingId];
+
+  if (!amount || isNaN(amount) || Number(amount) <= 0) {
+    toast.error("Please enter a valid amount!");
+    return;
+  }
+
+  try {
+    const crowdfundingWithSigner = contract.connect(signer);
+    const tx = await crowdfundingWithSigner.contribute(fundraisingId, {
+      value: ethers.parseEther(amount),
+    });
+    await tx.wait();
+    
+    toast.success("💰 Contribution successful!");
+    loadFundraisings();
+  } catch (error) {
+    console.error("Error contributing:", error);
+    toast.error(`❌ Error: ${error.message}`);
+  }
+};
+
 
   return (
     <div className="fundraising-list-container">
@@ -110,7 +114,7 @@ const FundraisingList = ({ provider, refresh }) => {
 
             
 
-            {/* Input și buton de contribuție */}
+            
             {!fund.executed && (
               <>
                 <input
@@ -130,7 +134,7 @@ const FundraisingList = ({ provider, refresh }) => {
                 </button>
               </>
             )}
-            {/* Status Bar pentru progres */}
+            
             <div className="progress-bar-container">
               <div 
                 className="progress-bar" 

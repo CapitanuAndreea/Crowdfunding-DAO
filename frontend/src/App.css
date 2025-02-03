@@ -1,4 +1,3 @@
-/* App.css */
 .app-container {
   font-family: Arial, sans-serif;
   text-align: center;
@@ -36,7 +35,7 @@
 
 button {
   padding: 10px 20px;
-  background-color: #007bff;
+  background-color: #ff9800;
   color: white;
   border: none;
   border-radius: 5px;
@@ -49,4 +48,104 @@ button:disabled {
 
 h1, h2 {
   color: #333;
+}
+
+.show-projects-button {
+  background-color: #ff9800;
+  color: white;
+  padding: 10px 20px;
+  font-size: 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.show-projects-button:hover {
+  background-color: #ff9805;
+}
+
+.my-projects {
+  margin-top: 30px;
+  padding: 20px;
+  background-color: #f4f4f9;
+  border-radius: 8px;
+}
+
+.my-projects-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.no-projects-message {
+  font-size: 18px;
+  color: #777;
+  font-style: italic;
+}
+
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.project-card {
+  background-color: #fff;
+  border: 1px solid #ddd;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.project-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+.project-name {
+  font-size: 20px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.project-description {
+  font-size: 16px;
+  color: #555;
+  margin-bottom: 15px;
+}
+
+.project-amount {
+  font-size: 16px;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.project-status {
+  font-size: 16px;
+  color: #555;
+  margin-bottom: 15px;
+}
+
+.withdraw-button {
+  background-color: #f44336;
+  color: white;
+  padding: 10px 20px;
+  font-size: 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.withdraw-button:hover {
+  background-color: #e53935;
+}
+
+.withdraw-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
 }

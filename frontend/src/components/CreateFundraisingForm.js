@@ -10,17 +10,15 @@ const CreateFundraisingForm = ({ provider, onProjectCreated }) => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [fundRequest, setFundRequest] = useState("");
-  const [executionTime, setExecutionTime] = useState("");
   const [loading, setLoading] = useState(false);
-
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!description || !fundRequest || !executionTime) {
+    if (!description || !fundRequest) {
       toast.error("All fields are required!");
       return;
     }
-  
+
     setLoading(true);
     try {
       const signer = await provider.getSigner();
@@ -29,34 +27,34 @@ const CreateFundraisingForm = ({ provider, onProjectCreated }) => {
         CrowdfundingABI.abi,
         signer
       );
-  
+
       const fundAmount = ethers.parseEther(fundRequest);
+      const executionTime = 0;
+
       const tx = await crowdfundingContract.createProposal(
         name,
         description,
         fundAmount,
         executionTime
       );
-  
+
       await tx.wait();
-  
+
       toast.success("🎉 Fundraising created successfully!");
-  
+
       if (onProjectCreated) {
         onProjectCreated();
       }
-  
+
       setName("");
       setDescription("");
       setFundRequest("");
-      setExecutionTime("");
     } catch (error) {
       console.error("Error creating fundraising:", error);
       toast.error(`❌ Error: ${error.message}`);
     }
     setLoading(false);
   };
-  
 
   return (
     <form onSubmit={handleSubmit} className="create-fundraising-form">
@@ -82,19 +80,12 @@ const CreateFundraisingForm = ({ provider, onProjectCreated }) => {
         onChange={(e) => setFundRequest(e.target.value)}
         className="input-field"
       />
-      <input
-        type="number"
-        placeholder="Execution Time (timestamp)"
-        value={executionTime}
-        onChange={(e) => setExecutionTime(e.target.value)}
-        className="input-field"
-      />
+      
       <button type="submit" className="submit-button" disabled={loading}>
         {loading ? "Processing..." : "Create Fundraising"}
       </button>
     </form>
   );
 };
-
 
 export default CreateFundraisingForm;

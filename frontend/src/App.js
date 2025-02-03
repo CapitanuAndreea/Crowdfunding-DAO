@@ -26,13 +26,13 @@ const App = () => {
   const [disabledWithdraws, setDisabledWithdraws] = useState({});
 
   const handleProjectCreated = () => {
-    setRefreshProjects(prev => !prev); // Toggling va re-randa lista de proiecte
+    setRefreshProjects(prev => !prev);
   };
 
   useEffect(() => {
     if (window.ethereum) {
       setMetamaskInstalled(true);
-      setShowMyProjects(false); // 🔄 Închide automat bara cu proiecte la schimbarea contului
+      setShowMyProjects(false);
       setMyProjects([]);
 
       
@@ -92,6 +92,8 @@ const App = () => {
     }
   };
 
+
+  
   const loadMyProjects = async () => {
     if (!account || !provider) return;
     try {
@@ -163,9 +165,9 @@ const withdrawFunds = async (contractAddress) => {
           <>
             <p>Connected Account: {account}</p>
             <p>Balance: {balance} ETH</p>
-            <button onClick={loadMyProjects} className="connect-button">
-              Show My Projects
-            </button>
+            <button onClick={loadMyProjects} className="show-projects-button">
+          Show My Projects
+        </button>
           </>
         ) : (
           <>
@@ -190,34 +192,47 @@ const withdrawFunds = async (contractAddress) => {
             <FundraisingList provider={provider} refresh={refreshProjects}/>
           </div>
 
-          {showMyProjects && (
-            <div className="my-projects">
-              <h2>My Projects</h2>
-              {myProjects.length === 0 ? (
-                <p>No projects created.</p>
-              ) : (
-                myProjects.map((project, index) => (
-                  <div key={index} className="project-item">
-                    <p><strong>Name:</strong> {project.name}</p>
-                    <p><strong>Description:</strong> {project.description}</p>
-                    <p><strong>Required Amount:</strong> {project.fundRequest} ETH</p>
-                    <p><strong>Raised Amount:</strong> {project.raisedAmount} ETH</p>
-                    <p><strong>Status:</strong> {project.completed ? "Completed ✅" : "Active ⏳"}</p>
-                    
-                    {project.completed && (
-                      <button 
-                        onClick={() => withdrawFunds(project.contractAddress)} 
-                        disabled={disabledWithdraws[project.contractAddress]}
-                      >
-                        Withdraw Funds
-                      </button>
-                    )}
+          
+        
 
-                  </div>
-                ))
-              )}
+        <div>
+      {showMyProjects && (
+        <div className="my-projects">
+          <h2 className="my-projects-title">My Projects</h2>
+          {myProjects.length === 0 ? (
+            <p className="no-projects-message">No projects created yet.</p>
+          ) : (
+            <div className="projects-grid">
+              {myProjects.map((project, index) => (
+                <div key={index} className="project-card">
+                  <h3 className="project-name">{project.name}</h3>
+                  <p className="project-description">{project.description}</p>
+                  <p className="project-amount">
+                    <strong>Required Amount:</strong> {project.fundRequest} ETH
+                  </p>
+                  <p className="project-amount">
+                    <strong>Raised Amount:</strong> {project.raisedAmount} ETH
+                  </p>
+                  <p className="project-status">
+                    <strong>Status:</strong> {project.completed ? "Completed ✅" : "Active ⏳"}
+                  </p>
+                  
+                  {project.completed && (
+                    <button
+                      onClick={() => withdrawFunds(project.contractAddress)}
+                      disabled={disabledWithdraws[project.contractAddress]}
+                      className="withdraw-button"
+                    >
+                      Withdraw Funds
+                    </button>
+                  )}
+                </div>
+              ))}
             </div>
           )}
+        </div>
+      )}
+      </div>
         </div>
       )}
       <ToastContainer position="top-right" autoClose={3000} closeButton={false}  />

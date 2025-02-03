@@ -3,6 +3,7 @@
     "@openzeppelin/contracts": "^5.2.0",
     "dotenv": "^16.4.7",
     "ethers": "^6.13.5",
+    "mocha": "^11.1.0",
     "web-vitals": "^4.2.4"
   },
   "devDependencies": {

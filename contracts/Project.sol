@@ -7,12 +7,12 @@ contract Project {
     address public owner;
     uint256 public fundingGoal;
     uint256 public receivedFunds;
-    uint256 public finalAmount; // 🔥 Stocăm suma finală chiar și după retragere
+    uint256 public finalAmount;
     bool public completed;
 
     event FundsReceived(address contributor, uint256 amount);
     event ProjectCompleted(address projectOwner, uint256 totalFunds);
-    event FundsWithdrawn(address projectOwner, uint256 amount); // 🔥 Nou eveniment
+    event FundsWithdrawn(address projectOwner, uint256 amount);
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Only owner can call this function");
@@ -44,7 +44,7 @@ contract Project {
     function completeProject() internal {
         require(receivedFunds >= fundingGoal, "Funding goal not reached");
         completed = true;
-        finalAmount = receivedFunds; // 🔥 Salvăm suma totală strânsă
+        finalAmount = receivedFunds;
         emit ProjectCompleted(owner, receivedFunds);
     }
 

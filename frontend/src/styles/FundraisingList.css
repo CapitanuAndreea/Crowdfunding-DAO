@@ -1,4 +1,3 @@
-/* FundraisingList.css */
 .fundraising-list-container {
     padding: 20px;
   }
@@ -27,7 +26,6 @@
     background-color: #ccc;
   }
   
-  /* Container pentru progres */
 .progress-bar-container {
   width: 100%;
   height: 15px;
@@ -38,7 +36,6 @@
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
-/* Bara de progres care se umple */
 .progress-bar {
   height: 100%;
   background: linear-gradient(90deg, #ff8c00, #ff3b3b);

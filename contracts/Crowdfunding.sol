@@ -9,7 +9,7 @@ contract Crowdfunding {
         string name;
         string description;
         uint256 fundRequest;
-        uint256 totalFundsRaised; // 🔥 Adăugat pentru a ține evidența fondurilor donate
+        uint256 totalFundsRaised;
         bool executed;
         address projectContract;
         uint256 executionTime;
@@ -23,7 +23,7 @@ contract Crowdfunding {
     event ContributionReceived(address contributor, uint256 amount, address project);
     event ProposalCreated(uint256 proposalId, string name, string description, uint256 fundRequest, address projectContract, uint256 executionTime);
     event FundsReleased(uint256 proposalId, address projectContract, uint256 amount);
-    event ProposalExecuted(uint256 proposalId); // 🔥 Nou eveniment pentru a indica finalizarea unei propuneri
+    event ProposalExecuted(uint256 proposalId);
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Only owner can call this function");
@@ -47,7 +47,7 @@ contract Crowdfunding {
             name: _name,
             description: _description,
             fundRequest: _fundRequest,
-            totalFundsRaised: 0, // 🔥 Inițializăm cu 0
+            totalFundsRaised: 0,
             executed: false,
             projectContract: projectAddress,
             executionTime: _executionTime
@@ -65,10 +65,10 @@ contract Crowdfunding {
 
         require(!proposal.executed, "Proposal already executed");
 
-        proposal.totalFundsRaised += msg.value; // 🔥 Adăugăm suma donată
+        proposal.totalFundsRaised += msg.value;
 
         if (proposal.totalFundsRaised >= proposal.fundRequest) {
-            proposal.executed = true; // 🔥 Marcam ca finalizată dacă fondurile sunt atinse
+            proposal.executed = true;
             emit ProposalExecuted(proposalId);
         }
 
