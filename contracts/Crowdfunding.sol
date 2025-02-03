@@ -9,6 +9,7 @@ contract Crowdfunding {
         string name;
         string description;
         uint256 fundRequest;
+        uint256 totalFundsRaised; // 🔥 Adăugat pentru a ține evidența fondurilor donate
         bool executed;
         address projectContract;
         uint256 executionTime;
@@ -22,6 +23,7 @@ contract Crowdfunding {
     event ContributionReceived(address contributor, uint256 amount, address project);
     event ProposalCreated(uint256 proposalId, string name, string description, uint256 fundRequest, address projectContract, uint256 executionTime);
     event FundsReleased(uint256 proposalId, address projectContract, uint256 amount);
+    event ProposalExecuted(uint256 proposalId); // 🔥 Nou eveniment pentru a indica finalizarea unei propuneri
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Only owner can call this function");
@@ -38,7 +40,6 @@ contract Crowdfunding {
         uint256 _fundRequest,
         uint256 _executionTime
     ) external {
-        // Creare contract nou Project
         Project newProject = new Project(_name, _description, _fundRequest, msg.sender);
         address projectAddress = address(newProject);
 
@@ -46,6 +47,7 @@ contract Crowdfunding {
             name: _name,
             description: _description,
             fundRequest: _fundRequest,
+            totalFundsRaised: 0, // 🔥 Inițializăm cu 0
             executed: false,
             projectContract: projectAddress,
             executionTime: _executionTime
@@ -59,12 +61,18 @@ contract Crowdfunding {
     function contribute(uint256 proposalId) external payable {
         require(msg.value > 0, "Contribution must be greater than 0");
         require(proposalId < proposals.length, "Invalid proposal ID");
-        require(!proposals[proposalId].executed, "Proposal already executed");
-
         Proposal storage proposal = proposals[proposalId];
-        address payable projectContract = payable(proposal.projectContract);
 
-        // Trimite ETH către contractul Project
+        require(!proposal.executed, "Proposal already executed");
+
+        proposal.totalFundsRaised += msg.value; // 🔥 Adăugăm suma donată
+
+        if (proposal.totalFundsRaised >= proposal.fundRequest) {
+            proposal.executed = true; // 🔥 Marcam ca finalizată dacă fondurile sunt atinse
+            emit ProposalExecuted(proposalId);
+        }
+
+        address payable projectContract = payable(proposal.projectContract);
         (bool sent, ) = projectContract.call{value: msg.value}("");
         require(sent, "Failed to send Ether");
 
@@ -73,9 +81,6 @@ contract Crowdfunding {
     }
 
     function getProposalsCount() public view returns (uint) {
-    return proposals.length;
+        return proposals.length;
     }
-
 }
-
-

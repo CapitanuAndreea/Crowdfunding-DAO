@@ -7,10 +7,12 @@ contract Project {
     address public owner;
     uint256 public fundingGoal;
     uint256 public receivedFunds;
+    uint256 public finalAmount; // 🔥 Stocăm suma finală chiar și după retragere
     bool public completed;
 
     event FundsReceived(address contributor, uint256 amount);
     event ProjectCompleted(address projectOwner, uint256 totalFunds);
+    event FundsWithdrawn(address projectOwner, uint256 amount); // 🔥 Nou eveniment
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Only owner can call this function");
@@ -23,6 +25,7 @@ contract Project {
         fundingGoal = _fundingGoal;
         owner = _owner;
         receivedFunds = 0;
+        finalAmount = 0;
         completed = false;
     }
 
@@ -41,12 +44,24 @@ contract Project {
     function completeProject() internal {
         require(receivedFunds >= fundingGoal, "Funding goal not reached");
         completed = true;
-        payable(owner).transfer(receivedFunds);
+        finalAmount = receivedFunds; // 🔥 Salvăm suma totală strânsă
         emit ProjectCompleted(owner, receivedFunds);
     }
 
-    function getBalance() public view returns (uint256) {
-    return address(this).balance;
+    function withdrawFunds() external onlyOwner {
+        require(completed, "Project not completed yet");
+        uint256 amount = address(this).balance;
+        require(amount > 0, "No funds available");
+
+        payable(owner).transfer(amount);
+        emit FundsWithdrawn(owner, amount);
     }
 
+    function getBalance() public view returns (uint256) {
+        return address(this).balance;
+    }
+
+    function getFinalAmount() public view returns (uint256) {
+        return finalAmount;
+    }
 }

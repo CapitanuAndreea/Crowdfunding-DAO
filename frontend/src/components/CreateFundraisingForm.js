@@ -3,9 +3,9 @@ import { ethers } from "ethers";
 import CrowdfundingABI from "../Crowdfunding.json";
 import "../styles/CreateFundraisingForm.css";
 
-const crowdfundingAddress = "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0";
+const crowdfundingAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
 
-const CreateFundraisingForm = ({ provider }) => {
+const CreateFundraisingForm = ({ provider, onProjectCreated }) => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [fundRequest, setFundRequest] = useState("");
@@ -36,17 +36,20 @@ const CreateFundraisingForm = ({ provider }) => {
         executionTime
       );
 
-      const receipt = await tx.wait();
+      await tx.wait();
 
-      // Extrage adresa noului contract Project din evenimentul ProposalCreated
-      const event = receipt.logs.find(log => log.fragment.name === "ProposalCreated");
-
-      if (event) {
-        const projectAddress = event.args.projectContract;
-        alert(`Fundraising created successfully! Project Contract Address: ${projectAddress}`);
-      } else {
-        alert("Fundraising created, but couldn't fetch the project address.");
+      alert("Fundraising created successfully!");
+      
+      // 🔄 Apelează funcția de actualizare a listei
+      if (onProjectCreated) {
+        onProjectCreated();
       }
+
+      // 🧹 Resetează formularul
+      setName("");
+      setDescription("");
+      setFundRequest("");
+      setExecutionTime("");
 
     } catch (error) {
       console.error("Error creating fundraising:", error);
@@ -92,5 +95,6 @@ const CreateFundraisingForm = ({ provider }) => {
     </form>
   );
 };
+
 
 export default CreateFundraisingForm;

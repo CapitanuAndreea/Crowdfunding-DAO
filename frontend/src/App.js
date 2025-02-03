@@ -8,20 +8,32 @@ import "./App.css";
 
 const CrowdfundingABI = CrowdfundingData.abi;
 const ProjectABI = ProjectData.abi;
-const crowdfundingAddress = "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0";
+const crowdfundingAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
 
 const App = () => {
   const [account, setAccount] = useState(null);
   const [balance, setBalance] = useState("0");
   const [provider, setProvider] = useState(null);
   const [signer, setSigner] = useState(null);
+  const [refreshProjects, setRefreshProjects] = useState(false);
   const [loading, setLoading] = useState(false);
   const [metamaskInstalled, setMetamaskInstalled] = useState(false);
+  const [myProjects, setMyProjects] = useState([]);
+  const [showMyProjects, setShowMyProjects] = useState(false);
+  const [disabledWithdraws, setDisabledWithdraws] = useState({});
+
+  const handleProjectCreated = () => {
+    setRefreshProjects(prev => !prev); // Toggling va re-randa lista de proiecte
+  };
 
   useEffect(() => {
     if (window.ethereum) {
       setMetamaskInstalled(true);
+      setShowMyProjects(false); // 🔄 Închide automat bara cu proiecte la schimbarea contului
+      setMyProjects([]);
 
+      
+      
       window.ethereum.on("accountsChanged", async (accounts) => {
         try {
           if (accounts.length > 0) {
@@ -77,6 +89,64 @@ const App = () => {
     }
   };
 
+  const loadMyProjects = async () => {
+    if (!account || !provider) return;
+    try {
+      const crowdfundingContract = new ethers.Contract(
+        crowdfundingAddress,
+        CrowdfundingABI,
+        provider
+      );
+      const count = await crowdfundingContract.getProposalsCount();
+      const projects = [];
+
+      for (let i = 0; i < count; i++) {
+        const proposal = await crowdfundingContract.proposals(i);
+        if (proposal.projectContract) {
+          const projectContract = new ethers.Contract(
+            proposal.projectContract,
+            ProjectABI,
+            provider
+          );
+          const projectOwner = await projectContract.owner();
+          if (projectOwner.toLowerCase() === account.toLowerCase()) {
+            const raisedAmount = await projectContract.getFinalAmount();
+            const fundRequest = ethers.formatEther(proposal.fundRequest);
+            projects.push({
+              id: i,
+              name: proposal.name,
+              description: proposal.description,
+              raisedAmount: ethers.formatEther(raisedAmount),
+              fundRequest: fundRequest,
+              completed: raisedAmount >= ethers.parseEther(fundRequest),
+              contractAddress: proposal.projectContract,
+            });
+          }
+        }
+      }
+      setMyProjects(projects);
+      setShowMyProjects(prev => !prev);
+    } catch (error) {
+      console.error("Error loading projects:", error);
+    }
+  };
+
+  const withdrawFunds = async (contractAddress) => {
+    if (!signer) return;
+    try {
+      setDisabledWithdraws((prev) => ({ ...prev, [contractAddress]: true }));
+      const projectContract = new ethers.Contract(contractAddress, ProjectABI, signer);
+      const tx = await projectContract.withdrawFunds();
+      await tx.wait();
+      alert("Funds withdrawn successfully!");
+      loadMyProjects();
+    } catch (error) {
+      console.error("Error withdrawing funds:", error);
+      alert("Withdrawal failed.");
+      setDisabledWithdraws((prev) => ({ ...prev, [contractAddress]: false }));
+    }
+  };
+
   return (
     <div className="app-container">
       <div className="header">
@@ -87,6 +157,9 @@ const App = () => {
           <>
             <p>Connected Account: {account}</p>
             <p>Balance: {balance} ETH</p>
+            <button onClick={loadMyProjects} className="connect-button">
+              Show My Projects
+            </button>
           </>
         ) : (
           <>
@@ -104,12 +177,41 @@ const App = () => {
       {account && (
         <div className="main-content">
           <div className="create-fundraising">
-            <CreateFundraisingForm provider={provider} />
+            <CreateFundraisingForm provider={provider} onProjectCreated={handleProjectCreated}/>
           </div>
 
           <div className="fundraising-list">
-            <FundraisingList provider={provider} />
+            <FundraisingList provider={provider} refresh={refreshProjects}/>
           </div>
+
+          {showMyProjects && (
+            <div className="my-projects">
+              <h2>My Projects</h2>
+              {myProjects.length === 0 ? (
+                <p>No projects created.</p>
+              ) : (
+                myProjects.map((project, index) => (
+                  <div key={index} className="project-item">
+                    <p><strong>Name:</strong> {project.name}</p>
+                    <p><strong>Description:</strong> {project.description}</p>
+                    <p><strong>Required Amount:</strong> {project.fundRequest} ETH</p>
+                    <p><strong>Raised Amount:</strong> {project.raisedAmount} ETH</p>
+                    <p><strong>Status:</strong> {project.completed ? "Completed ✅" : "Active ⏳"}</p>
+                    
+                    {project.completed && (
+                      <button 
+                        onClick={() => withdrawFunds(project.contractAddress)} 
+                        disabled={disabledWithdraws[project.contractAddress]}
+                      >
+                        Withdraw Funds
+                      </button>
+                    )}
+
+                  </div>
+                ))
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
