@@ -9,7 +9,6 @@ const FundraisingList = ({ provider, refresh }) => {
   const [fundraisings, setFundraisings] = useState([]);
   const [contract, setContract] = useState(null);
   const [contributionAmounts, setContributionAmounts] = useState({});
-  const [currentFunds, setCurrentFunds] = useState({});
 
   useEffect(() => {
     if (!provider) return;
@@ -25,29 +24,30 @@ const FundraisingList = ({ provider, refresh }) => {
         signer
       );
       setContract(crowdfundingContract);
-  
+
       const count = await crowdfundingContract.getProposalsCount();
       const fundraisers = [];
-  
+
       for (let i = 0; i < count; i++) {
         const proposal = await crowdfundingContract.proposals(i);
-  
+
         const projectContract = new ethers.Contract(
           proposal.projectContract,
           ["function getBalance() public view returns (uint256)", "function getFinalAmount() public view returns (uint256)"],
           provider
         );
-  
+
         let raisedAmount;
         if (proposal.executed) {
           raisedAmount = await projectContract.getFinalAmount();
         } else {
           raisedAmount = await projectContract.getBalance();
         }
-  
+
         const raisedEth = ethers.formatEther(raisedAmount);
         const fundRequestEth = ethers.formatEther(proposal.fundRequest);
-  
+        const progress = Math.min((raisedEth / fundRequestEth) * 100, 100);
+
         fundraisers.push({
           id: i,
           name: proposal.name,
@@ -55,16 +55,16 @@ const FundraisingList = ({ provider, refresh }) => {
           fundRequest: fundRequestEth,
           raisedAmount: raisedEth,
           executed: proposal.executed,
+          progress: progress,
           projectContract: proposal.projectContract,
         });
       }
-  
+
       setFundraisings(fundraisers);
     } catch (error) {
       console.error("Error loading fundraisings:", error);
     }
   };
-  
 
   const contribute = async (fundraisingId) => {
     if (!contract) return;
@@ -72,7 +72,7 @@ const FundraisingList = ({ provider, refresh }) => {
     const amount = contributionAmounts[fundraisingId];
 
     if (!amount || isNaN(amount) || Number(amount) <= 0) {
-      alert("Introduceți o sumă validă!");
+      alert("Please enter a valid amount!");
       return;
     }
 
@@ -82,13 +82,12 @@ const FundraisingList = ({ provider, refresh }) => {
         value: ethers.parseEther(amount),
       });
       await tx.wait();
-      alert("Contribuție efectuată cu succes!");
-
-      // 🔄 Reactualizează doar datele, fără refresh
+      
+      alert("Contribution successful!");
       loadFundraisings();
     } catch (error) {
-      console.error("Eroare la contribuție:", error);
-      alert(`Eroare: ${error.message}`);
+      console.error("Error contributing:", error);
+      alert(`Error: ${error.message}`);
     }
   };
 
@@ -105,26 +104,39 @@ const FundraisingList = ({ provider, refresh }) => {
             <p><strong>Required Amount:</strong> {fund.fundRequest} ETH</p>
             <p><strong>Raised Amount:</strong> {fund.raisedAmount} ETH</p>
             <p><strong>Status:</strong> {fund.executed ? "Completed ✅" : "Active ⏳"}</p>
+            <p><strong>Progress:</strong> {fund.progress.toFixed(2)}%</p>
+            
+            
 
-            {/* Input pentru suma de contribuție */}
-            <input
-              type="number"
-              placeholder="Enter amount (ETH)"
-              value={contributionAmounts[index] || ""}
-              onChange={(e) =>
-                setContributionAmounts({
-                  ...contributionAmounts,
-                  [index]: e.target.value,
-                })
-              }
-              className="input-field"
-              disabled={fund.executed}
-            />
+            
 
-            {/* Buton pentru contribuție */}
-            <button onClick={() => contribute(index)} disabled={fund.executed}>
-              Contribute
-            </button>
+            {/* Input și buton de contribuție */}
+            {!fund.executed && (
+              <>
+                <input
+                  type="number"
+                  placeholder="Enter amount (ETH)"
+                  value={contributionAmounts[index] || ""}
+                  onChange={(e) =>
+                    setContributionAmounts({
+                      ...contributionAmounts,
+                      [index]: e.target.value,
+                    })
+                  }
+                  className="input-field"
+                />
+                <button onClick={() => contribute(index)} className="contribute-button">
+                  Contribute
+                </button>
+              </>
+            )}
+            {/* Status Bar pentru progres */}
+            <div className="progress-bar-container">
+              <div 
+                className="progress-bar" 
+                style={{ width: `${fund.progress}%` }}
+              ></div>
+            </div>
           </div>
         ))
       )}

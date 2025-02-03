@@ -5,6 +5,9 @@ import ProjectData from "./Project.json";
 import CreateFundraisingForm from "./components/CreateFundraisingForm";
 import FundraisingList from "./components/FundraisingList";
 import "./App.css";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 
 const CrowdfundingABI = CrowdfundingData.abi;
 const ProjectABI = ProjectData.abi;
@@ -131,21 +134,24 @@ const App = () => {
     }
   };
 
-  const withdrawFunds = async (contractAddress) => {
-    if (!signer) return;
-    try {
-      setDisabledWithdraws((prev) => ({ ...prev, [contractAddress]: true }));
-      const projectContract = new ethers.Contract(contractAddress, ProjectABI, signer);
-      const tx = await projectContract.withdrawFunds();
-      await tx.wait();
-      alert("Funds withdrawn successfully!");
-      loadMyProjects();
-    } catch (error) {
-      console.error("Error withdrawing funds:", error);
-      alert("Withdrawal failed.");
-      setDisabledWithdraws((prev) => ({ ...prev, [contractAddress]: false }));
-    }
-  };
+  
+
+const withdrawFunds = async (contractAddress) => {
+  if (!signer) return;
+  try {
+    setDisabledWithdraws((prev) => ({ ...prev, [contractAddress]: true }));
+    const projectContract = new ethers.Contract(contractAddress, ProjectABI, signer);
+    const tx = await projectContract.withdrawFunds();
+    await tx.wait();
+
+    toast.success("💸 Funds withdrawn successfully!");
+    loadMyProjects();
+  } catch (error) {
+    console.error("Error withdrawing funds:", error);
+    toast.error("❌ Withdrawal failed.");
+    setDisabledWithdraws((prev) => ({ ...prev, [contractAddress]: false }));
+  }
+};
 
   return (
     <div className="app-container">
@@ -214,6 +220,8 @@ const App = () => {
           )}
         </div>
       )}
+      <ToastContainer position="top-right" autoClose={3000} closeButton={false}  />
+
     </div>
   );
 };

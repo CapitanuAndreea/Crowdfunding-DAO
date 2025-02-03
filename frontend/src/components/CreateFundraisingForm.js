@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { ethers } from "ethers";
 import CrowdfundingABI from "../Crowdfunding.json";
 import "../styles/CreateFundraisingForm.css";
+import { toast } from "react-toastify";
 
 const crowdfundingAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
 
@@ -12,13 +13,14 @@ const CreateFundraisingForm = ({ provider, onProjectCreated }) => {
   const [executionTime, setExecutionTime] = useState("");
   const [loading, setLoading] = useState(false);
 
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!description || !fundRequest || !executionTime) {
-      alert("All fields are required!");
+      toast.error("All fields are required!");
       return;
     }
-
+  
     setLoading(true);
     try {
       const signer = await provider.getSigner();
@@ -27,7 +29,7 @@ const CreateFundraisingForm = ({ provider, onProjectCreated }) => {
         CrowdfundingABI.abi,
         signer
       );
-
+  
       const fundAmount = ethers.parseEther(fundRequest);
       const tx = await crowdfundingContract.createProposal(
         name,
@@ -35,28 +37,26 @@ const CreateFundraisingForm = ({ provider, onProjectCreated }) => {
         fundAmount,
         executionTime
       );
-
+  
       await tx.wait();
-
-      alert("Fundraising created successfully!");
-      
-      // 🔄 Apelează funcția de actualizare a listei
+  
+      toast.success("🎉 Fundraising created successfully!");
+  
       if (onProjectCreated) {
         onProjectCreated();
       }
-
-      // 🧹 Resetează formularul
+  
       setName("");
       setDescription("");
       setFundRequest("");
       setExecutionTime("");
-
     } catch (error) {
       console.error("Error creating fundraising:", error);
-      alert(`Error: ${error.message}`);
+      toast.error(`❌ Error: ${error.message}`);
     }
     setLoading(false);
   };
+  
 
   return (
     <form onSubmit={handleSubmit} className="create-fundraising-form">
